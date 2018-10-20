@@ -1,9 +1,10 @@
+/*
+	Copyright (c) 2018 Andrew Depke
+*/
 #include "../Include/TaskQueue.h"
 
 #include <cassert>
 #include <algorithm>
-
-#include <iostream>
 
 void TaskQueue::WorkerRunnable(TaskQueue* const Manager)
 {
