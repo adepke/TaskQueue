@@ -7,7 +7,6 @@
 #include <functional>
 #include <vector>
 #include <thread>
-#include <atomic>
 
 class TaskQueue
 {
