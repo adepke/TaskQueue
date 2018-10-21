@@ -41,7 +41,8 @@ public:
 	void Resize(int NewWorkerCount);
 
 	// Queue up a new task. Returns the task ID.
-	int Enqueue(T Task);
+	template <typename U>
+	int Enqueue(U&& Task);
 
 	// Returns how many tasks are in the queue waiting to start.
 	int GetUnstartedTasksCount();
@@ -62,7 +63,7 @@ protected:
 	bool IsPendingDestroy(std::thread::id ID);
 
 	// [Not Locked]
-	T Dequeue();
+	bool Dequeue(T& Output);
 };
 
 template <typename T>
@@ -75,17 +76,16 @@ void TaskQueue<T>::WorkerRunnable(TaskQueue* const Manager)
 		// lock to begin sleeping, we won't wait on the condition variable in time and will miss the queue up.
 		std::unique_lock<std::mutex> EvaluationLock(Manager->Lock);
 
-		auto NewTask = Manager->Dequeue();
+		T NewTask;
 
-		// We have a task, run it.
-		if (NewTask)
+		// If we have a task, run it.
+		if (Manager->Dequeue(NewTask))
 		{
 			EvaluationLock.unlock();
 
 			std::invoke(NewTask);
 		}
 
-		// No new tasks available, sleep until we receive a signal.
 		else
 		{
 			// Sleep until new work is queued. Once awoken, the worker performs a state reevaluation before pulling from the work queue.
@@ -162,7 +162,8 @@ void TaskQueue<T>::Resize(int NewWorkerCount)
 }
 
 template <typename T>
-int TaskQueue<T>::Enqueue(T Task)
+template <typename U>  // This is used to let Enqueue abuse reference condensation, letting this function be called with either an LValue or an RValue.
+int TaskQueue<T>::Enqueue(U&& Task)
 {
 	std::lock_guard<std::mutex> LocalLock(Lock);
 
@@ -242,15 +243,15 @@ bool TaskQueue<T>::IsPendingDestroy(std::thread::id ID)
 }
 
 template <typename T>
-T TaskQueue<T>::Dequeue()
+bool TaskQueue<T>::Dequeue(T& Output)
 {
 	if (Queue.size() > 0)
 	{
-		auto Task = Queue.front();
+		Output = Queue.front().second;
 		Queue.pop_front();
 
-		return Task.second;
+		return true;
 	}
 
-	return {};
+	return false;
 }
