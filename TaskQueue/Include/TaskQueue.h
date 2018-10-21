@@ -63,7 +63,7 @@ protected:
 	bool IsPendingDestroy(std::thread::id ID);
 
 	// [Not Locked]
-	bool Dequeue(T& Output);
+	T Dequeue(bool& Success);  // We can't guarantee that T implements operator bool, so Success is used to determine if the value returned is valid or not.
 };
 
 template <typename T>
@@ -76,10 +76,11 @@ void TaskQueue<T>::WorkerRunnable(TaskQueue* const Manager)
 		// lock to begin sleeping, we won't wait on the condition variable in time and will miss the queue up.
 		std::unique_lock<std::mutex> EvaluationLock(Manager->Lock);
 
-		T NewTask;
+		bool HasTask = false;
+		T NewTask(std::move(Manager->Dequeue(HasTask)));
 
 		// If we have a task, run it.
-		if (Manager->Dequeue(NewTask))
+		if (HasTask)
 		{
 			EvaluationLock.unlock();
 
@@ -243,15 +244,19 @@ bool TaskQueue<T>::IsPendingDestroy(std::thread::id ID)
 }
 
 template <typename T>
-bool TaskQueue<T>::Dequeue(T& Output)
+T TaskQueue<T>::Dequeue(bool& Success)
 {
 	if (Queue.size() > 0)
 	{
-		Output = Queue.front().second;
+		Success = true;
+
+		// We use move semantics here to acquire control over the task's resources. If we passed the reference around,
+		// it would become a dangling pointer as soon as pop_front was called, which is immediately in this case.
+		T NewTask(std::move(Queue.front().second));
 		Queue.pop_front();
 
-		return true;
+		return NewTask;
 	}
 
-	return false;
+	return T{};
 }
