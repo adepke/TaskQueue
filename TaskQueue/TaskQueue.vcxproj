@@ -22,8 +22,7 @@
     <ClInclude Include="Include\TaskQueue.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Source\Main.cpp" />
-    <ClCompile Include="Source\TaskQueue.cpp" />
+    <ClCompile Include="Test.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>

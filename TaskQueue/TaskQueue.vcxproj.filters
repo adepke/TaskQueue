@@ -1,9 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="Source">
-      <UniqueIdentifier>{5db39932-fe96-41dd-bd02-c96327cc2b51}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Include">
       <UniqueIdentifier>{f44fd4e1-b0df-4b6e-be0d-e65fb03cce19}</UniqueIdentifier>
     </Filter>
@@ -14,11 +11,6 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Source\TaskQueue.cpp">
-      <Filter>Source</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Main.cpp">
-      <Filter>Source</Filter>
-    </ClCompile>
+    <ClCompile Include="Test.cpp" />
   </ItemGroup>
 </Project>
