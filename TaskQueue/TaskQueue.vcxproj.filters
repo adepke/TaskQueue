@@ -4,6 +4,9 @@
     <Filter Include="Include">
       <UniqueIdentifier>{f44fd4e1-b0df-4b6e-be0d-e65fb03cce19}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Demo">
+      <UniqueIdentifier>{0f779e0c-66da-4b58-9b05-adf523d6eccb}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Include\TaskQueue.h">
@@ -11,6 +14,8 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Test.cpp" />
+    <ClCompile Include="Demo\Demo.cpp">
+      <Filter>Demo</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
