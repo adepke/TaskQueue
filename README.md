@@ -1,7 +1,7 @@
 # TaskQueue
 ### Modern C++ Generic Thread Pool
 
-Compact yet powerful concurrent thread pool implementation.
+Compact yet powerful concurrent thread pool implementation. Requires C++17.
 
 ### Documentation
 *Functions marked with `[Thread Safe]` indicate safe concurrent usage.*
