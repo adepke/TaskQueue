@@ -76,7 +76,7 @@ void TaskQueue<T>::WorkerRunnable(TaskQueue* const Manager)
 		// We have to lock here to avoid deadlock when a call to Stop() is made.
 		std::unique_lock<std::mutex> EvaluationLock(Manager->Lock);
 
-		if (Manager->IsPendingDestroy(std::this_thread::get_id())
+		if (Manager->IsPendingDestroy(std::this_thread::get_id()))
 		{
 			EvaluationLock.unlock();
 			
