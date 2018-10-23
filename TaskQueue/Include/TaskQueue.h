@@ -60,6 +60,7 @@ public:
 protected:
 	void WorkerRunnable(TaskQueue* const Manager);
 
+	// [Not Locked] Determines if a worker is able to continue its lifetime or not.
 	bool IsPendingDestroy(std::thread::id ID);
 
 	// [Not Locked]
@@ -70,11 +71,17 @@ template <typename T>
 void TaskQueue<T>::WorkerRunnable(TaskQueue* const Manager)
 {
 	// Worker execution loop.
-	while (Manager && !Manager->IsPendingDestroy(std::this_thread::get_id()))
+	while (Manager)
 	{
-		// We have to lock here, otherwise if work is queued after we find that there's an empty work queue, but before we obtain a
-		// lock to begin sleeping, we won't wait on the condition variable in time and will miss the queue up.
+		// We have to lock here to avoid deadlock when a call to Stop() is made.
 		std::unique_lock<std::mutex> EvaluationLock(Manager->Lock);
+
+		if (Manager->IsPendingDestroy(std::this_thread::get_id())
+		{
+			EvaluationLock.unlock();
+			
+			break;
+		}
 
 		bool HasTask = false;
 		T NewTask(std::move(Manager->Dequeue(HasTask)));
@@ -229,8 +236,6 @@ void TaskQueue<T>::Stop()
 template <typename T>
 bool TaskQueue<T>::IsPendingDestroy(std::thread::id ID)
 {
-	std::lock_guard<std::mutex> LocalLock(Lock);
-
 	for (const auto& Worker : Workers)
 	{
 		if (Worker.first.get_id() == ID)
