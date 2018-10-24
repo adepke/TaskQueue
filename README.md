@@ -40,7 +40,7 @@ void TaskQueue::Resize(int NewWorkerCount)
 template <typename U>
 int Enqueue(U&& Task)
 ```
-`[Thread Safe]` Enqueues a new task for a worker to process when available. If no workers are in the pool, the task will sit in queue until a resize. U must match the type T. This extra template is used to leverage reference condensation, letting `Task` be an L value or an R value. Returns the ID of the newly enqueued task.
+`[Thread Safe]` Enqueues a new task for a worker to process when available. If no workers are in the pool, the task will sit in queue until a resize. U must match the type T. This extra template is used to leverage reference condensation, letting `Task` be an L value or an R value. Returns the ID of the newly enqueued task, `-1` if a failure occurred.
 
 ```cpp
 int GetUnstartedTasksCount()
@@ -58,6 +58,11 @@ void CancelAllUnstartedTasks()
 `[Thread Safe]` Cancels all tasks that haven't yet been started by workers.
 
 ```cpp
+void Join()
+```
+`[Thread Safe]` Blocks the calling thread until the workers have run all tasks in the queue and have synchronized. Prevents additional work from being enqueued from other threads until this call has completed. Once completed, the task queue is left in an empty working state with no workers.
+
+```cpp
 void Stop()
 ```
-`[Thread Safe]` Clears the work queue (Cancels unstarted tasks) and marks all workers for destruction. Kills any and all sleeping workers. Used to cleanly shutdown a task queue.
+`[Thread Safe]` Clears the work queue (Cancels unstarted tasks) and marks all workers for destruction. Kills any and all sleeping workers. Used to cleanly shutdown a task queue. Once completed, the task queue is left in an empty working state with no workers.
