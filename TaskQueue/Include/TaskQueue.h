@@ -78,8 +78,6 @@ void TaskQueue<T>::WorkerRunnable(TaskQueue* const Manager)
 
 		if (Manager->IsPendingDestroy(std::this_thread::get_id()))
 		{
-			EvaluationLock.unlock();
-			
 			break;
 		}
 
