@@ -5,6 +5,7 @@
 
 #include <mutex>
 #include <condition_variable>
+#include <atomic>
 #include <deque>
 #include <map>
 #include <functional>
@@ -19,6 +20,9 @@ class TaskQueue
 protected:
 	std::mutex Lock;
 	std::condition_variable WorkerSignal;
+	std::condition_variable DequeueSignal;
+	
+	std::atomic<bool> CanEnqueue;
 
 	std::deque<std::pair<int, T>> Queue;
 	int CurrentWorkID;
@@ -53,7 +57,12 @@ public:
 	// Cancel all remaining tasks that haven't started.
 	void CancelAllUnstartedTasks();
 
-	// Clears the work queue and kills workers after they finish their current task.
+	// Finishes the lifetime of this task queue and synchronizes all workers, prevents additional queue manipulation from other threads for the duration of the call. Blocks calling thread.
+	// The task queue can be reused after the join has completed by resizing the pool.
+	void Join();
+
+	// Clears the work queue and kills workers after they finish their current task. Does not block calling thread.
+	// The task queue can be immediately reused by resizing the pool.
 	void Stop();
 
 // Worker Tools
@@ -116,11 +125,16 @@ void TaskQueue<T>::KillWorker()
 }
 
 template <typename T>
-TaskQueue<T>::TaskQueue() {}
+TaskQueue<T>::TaskQueue()
+{
+	CanEnqueue.store(true);
+}
 
 template <typename T>
 TaskQueue<T>::TaskQueue(int WorkerCount)
 {
+	CanEnqueue.store(true);
+	
 	assert(WorkerCount > 0 && "WorkerCount must be greater than 0!");
 
 	std::lock_guard<std::mutex> LocalLock(Lock);
@@ -171,6 +185,12 @@ template <typename T>
 template <typename U>  // This is used to let Enqueue abuse reference condensation, letting this function be called with either an LValue or an RValue.
 int TaskQueue<T>::Enqueue(U&& Task)
 {
+	// Return -1 if we're not able to enqueue new work at this time.
+	if (!CanEnqueue.load())
+	{
+		return -1;
+	}
+	
 	std::lock_guard<std::mutex> LocalLock(Lock);
 
 	++CurrentWorkID;
@@ -215,6 +235,41 @@ void TaskQueue<T>::CancelAllUnstartedTasks()
 }
 
 template <typename T>
+void TaskQueue<T>::Join()
+{
+	CanEnqueue.store(false);
+
+	std::unique_lock<std::mutex> QueueLock(Lock);
+
+	// Wait until the queue is empty.
+	while (!Queue.empty())
+	{
+		// This releases the QueueLock, so the workers can continue while we sleep on the dequeue signal. After this loop finishes, we reacquire the lock.
+		DequeueSignal.wait(QueueLock);
+	}
+
+	// Mark all workers for destroy.
+	for (auto& Worker : Workers)
+	{
+		Worker.second = true;
+	}
+
+	// Wake sleepers.
+	WorkerSignal.notify_all();
+
+	// Synchronize the workers.
+	for (auto& Worker : Workers)
+	{
+		Worker.first.join();
+	}
+
+	// Wipe the handles.
+	Workers.clear();
+
+	CanEnqueue.store(true);
+}
+
+template <typename T>
 void TaskQueue<T>::Stop()
 {
 	std::lock_guard<std::mutex> LocalLock(Lock);
@@ -226,6 +281,9 @@ void TaskQueue<T>::Stop()
 		Worker.second = true;
 		Worker.first.detach();
 	}
+	
+	// Release all handles to the worker pool, this must occur after all workers have been detached.
+	Workers.clear();
 
 	// Make sure we kill off any sleeping workers.
 	WorkerSignal.notify_all();
@@ -252,6 +310,8 @@ T TaskQueue<T>::Dequeue(bool& Success)
 	if (Queue.size() > 0)
 	{
 		Success = true;
+		
+		DequeueSignal.notify_all();
 
 		// We use move semantics here to acquire control over the task's resources. If we passed the reference around,
 		// it would become a dangling pointer as soon as pop_front was called, which is immediately in this case.
