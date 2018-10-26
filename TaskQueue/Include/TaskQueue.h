@@ -257,11 +257,15 @@ void TaskQueue<T>::Join()
 	// Wake sleepers.
 	WorkerSignal.notify_all();
 
+	QueueLock.unlock();  // Have to unlock here otherwise we'll deadlock from the workers trying to evaluate.
+
 	// Synchronize the workers.
 	for (auto& Worker : Workers)
 	{
 		Worker.first.join();
 	}
+
+	QueueLock.lock();  // Reacquire to safely perform the clear operation.
 
 	// Wipe the handles.
 	Workers.clear();
