@@ -163,7 +163,7 @@ void TaskQueue<T>::Resize(int NewWorkerCount)
 
 	if (NewWorkerCount > static_cast<int>(Workers.size()))
 	{
-		for (int Iter = Workers.size(); Iter < NewWorkerCount; ++Iter)
+		for (size_t Iter = Workers.size(); Iter < NewWorkerCount; ++Iter)
 		{
 			DeployWorker();
 		}
@@ -171,7 +171,7 @@ void TaskQueue<T>::Resize(int NewWorkerCount)
 
 	else if (NewWorkerCount < static_cast<int>(Workers.size()))
 	{
-		for (int Iter = Workers.size() - NewWorkerCount; Iter > 0; --Iter)
+		for (size_t Iter = Workers.size() - NewWorkerCount; Iter > 0; --Iter)
 		{
 			KillWorker();
 		}
