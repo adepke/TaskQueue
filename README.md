@@ -40,7 +40,7 @@ void TaskQueue::Resize(size_t NewWorkerCount)
 template <typename U>
 int Enqueue(U&& Task)
 ```
-`[Thread Safe]` Enqueues a new task for a worker to process when available. If no workers are in the pool, the task will sit in queue until a resize. U must match the type T. This extra template is used to leverage reference condensation, letting `Task` be an L value or an R value. Returns the ID of the newly enqueued task, `-1` if a failure occurred.
+`[Thread Safe]` Enqueues a new task for a worker to process when available. If no workers are in the pool, the task will sit in queue until a resize. U must match the type T. This extra template is used to leverage reference collapsing, letting `Task` be an L value or an R value. Returns the ID of the newly enqueued task, `-1` if a failure occurred.
 
 ```cpp
 int GetUnstartedTasksCount()
