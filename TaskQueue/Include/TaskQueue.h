@@ -37,12 +37,12 @@ protected:
 
 public:
 	TaskQueue();
-	TaskQueue(int WorkerCount);
+	TaskQueue(size_t WorkerCount);
 
 	int GetWorkerCount();
 
 	// Change the size of the worker pool.
-	void Resize(int NewWorkerCount);
+	void Resize(size_t NewWorkerCount);
 
 	// Queue up a new task. Returns the task ID.
 	template <typename U>
@@ -131,7 +131,7 @@ TaskQueue<T>::TaskQueue()
 }
 
 template <typename T>
-TaskQueue<T>::TaskQueue(int WorkerCount)
+TaskQueue<T>::TaskQueue(size_t WorkerCount)
 {
 	CanEnqueue.store(true);
 	
@@ -140,7 +140,7 @@ TaskQueue<T>::TaskQueue(int WorkerCount)
 	std::lock_guard<std::mutex> LocalLock(Lock);
 
 	// Launch the workers.
-	for (int Iter = 0; Iter < WorkerCount; ++Iter)
+	for (size_t Iter = 0; Iter < WorkerCount; ++Iter)
 	{
 		DeployWorker();
 	}
@@ -155,7 +155,7 @@ int TaskQueue<T>::GetWorkerCount()
 }
 
 template <typename T>
-void TaskQueue<T>::Resize(int NewWorkerCount)
+void TaskQueue<T>::Resize(size_t NewWorkerCount)
 {
 	assert(NewWorkerCount > 0 && "WorkerCount must be greater than 0!");
 
