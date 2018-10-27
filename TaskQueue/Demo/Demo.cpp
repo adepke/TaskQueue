@@ -6,14 +6,22 @@
 #include <iostream>
 #include <chrono>
 
+std::mutex PrintLock;
+
+#define PrintSynced(x) do \
+{ \
+	std::lock_guard<std::mutex> Lock(PrintLock); \
+	std::cout << x; \
+} while (0);
+
 // Example of a basic throwaway function.
 void Work()
 {
-	std::cout << "[Work] Started work on thread " << (std::this_thread::get_id()) << "\n";
+	PrintSynced("[Work] Started work on thread " << (std::this_thread::get_id()) << "\n");
 
 	std::this_thread::sleep_for(std::chrono::seconds(5));
 
-	std::cout << "[Work] Finished work on thread " << std::this_thread::get_id() << "\n";
+	PrintSynced("[Work] Finished work on thread " << std::this_thread::get_id() << "\n");
 }
 
 // Example of a minimal task object.
@@ -22,11 +30,11 @@ class SimpleTask
 public:
 	void operator()()
 	{
-		std::cout << "[SimpleTask] Started work on thread " << std::this_thread::get_id() << "\n";
+		PrintSynced("[SimpleTask] Started work on thread " << std::this_thread::get_id() << "\n");
 
 		std::this_thread::sleep_for(std::chrono::seconds(4));
 
-		std::cout << "[SimpleTask] Finished work on thread " << std::this_thread::get_id() << "\n";
+		PrintSynced("[SimpleTask] Finished work on thread " << std::this_thread::get_id() << "\n");
 	}
 };
 
@@ -41,11 +49,11 @@ public:
 	{
 		assert(SomeData == 3 && "SomeData did not match the magic value!");
 
-		std::cout << "[ComplexTask] Started work on thread " << std::this_thread::get_id() << "\n";
+		PrintSynced("[ComplexTask] Started work on thread " << std::this_thread::get_id() << "\n");
 
 		std::this_thread::sleep_for(std::chrono::seconds(5));
 
-		std::cout << "[ComplexTask] Finished work on thread " << std::this_thread::get_id() << "\n";
+		PrintSynced("[ComplexTask] Finished work on thread " << std::this_thread::get_id() << "\n");
 	}
 };
 
