@@ -182,7 +182,7 @@ void TaskQueue<T>::Resize(size_t NewWorkerCount)
 }
 
 template <typename T>
-template <typename U>  // This is used to let Enqueue abuse reference condensation, letting this function be called with either an LValue or an RValue.
+template <typename U>  // This is used to let Enqueue abuse reference collapsing, letting this function be called with either an LValue or an RValue.
 int TaskQueue<T>::Enqueue(U&& Task)
 {
 	// Return -1 if we're not able to enqueue new work at this time.
