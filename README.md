@@ -20,7 +20,7 @@ TaskQueue::TaskQueue()
 Default constructor, does not deploy any workers.
 
 ```cpp
-TaskQueue::TaskQueue(int WorkerCount)
+TaskQueue::TaskQueue(size_t WorkerCount)
 ```
 Allocates `WorkerCount` number of threads, which perform a state evaluation and immediately sleep if no work is in the queue.
 
@@ -32,7 +32,7 @@ int TaskQueue::GetWorkerCount()
 `[Thread Safe]` Returns the number of active workers. This includes sleeping workers, but does not include workers recently killed that are finishing their active task.
 
 ```cpp
-void TaskQueue::Resize(int NewWorkerCount)
+void TaskQueue::Resize(size_t NewWorkerCount)
 ```
 `[Thread Safe]` Resizes the worker pool to have `NewWorkerCount` worker threads, either allocating and deploying new workers or killing off some workers, depending on `NewWorkerCount`. If a worker that is performing a task is killed, they will complete their task before deallocating.
 
