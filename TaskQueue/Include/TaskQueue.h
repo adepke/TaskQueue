@@ -159,6 +159,12 @@ void TaskQueue<T>::Resize(size_t NewWorkerCount)
 {
 	assert(NewWorkerCount > 0 && "WorkerCount must be greater than 0!");
 
+	// Return if we're busy synchronizing threads.
+	if (!CanEnqueue.load())
+	{
+		return;
+	}
+
 	std::lock_guard<std::mutex> LocalLock(Lock);
 
 	if (NewWorkerCount > static_cast<int>(Workers.size()))
