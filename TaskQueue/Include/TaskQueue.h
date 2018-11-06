@@ -39,6 +39,8 @@ public:
 	TaskQueue();
 	TaskQueue(size_t WorkerCount);
 
+	~TaskQueue();
+
 	int GetWorkerCount();
 
 	// Change the size of the worker pool.
@@ -147,6 +149,12 @@ TaskQueue<T>::TaskQueue(size_t WorkerCount)
 }
 
 template <typename T>
+TaskQueue<T>::~TaskQueue()
+{
+	Join();
+}
+
+template <typename T>
 int TaskQueue<T>::GetWorkerCount()
 {
 	std::lock_guard<std::mutex> LocalLock(Lock);
@@ -243,40 +251,43 @@ void TaskQueue<T>::CancelAllUnstartedTasks()
 template <typename T>
 void TaskQueue<T>::Join()
 {
-	CanEnqueue.store(false);
-
 	std::unique_lock<std::mutex> QueueLock(Lock);
 
-	// Wait until the queue is empty.
-	while (!Queue.empty())
+	if (Workers.size() > 0)
 	{
-		// This releases the QueueLock, so the workers can continue while we sleep on the dequeue signal. After this loop finishes, we reacquire the lock.
-		DequeueSignal.wait(QueueLock);
+		CanEnqueue.store(false);
+
+		// Wait until the queue is empty.
+		while (!Queue.empty())
+		{
+			// This releases the QueueLock, so the workers can continue while we sleep on the dequeue signal. After this loop finishes, we reacquire the lock.
+			DequeueSignal.wait(QueueLock);
+		}
+
+		// Mark all workers for destroy.
+		for (auto& Worker : Workers)
+		{
+			Worker.second = true;
+		}
+
+		// Wake sleepers.
+		WorkerSignal.notify_all();
+
+		QueueLock.unlock();  // Have to unlock here otherwise we'll deadlock from the workers trying to evaluate.
+
+		// Synchronize the workers.
+		for (auto& Worker : Workers)
+		{
+			Worker.first.join();
+		}
+
+		QueueLock.lock();  // Reacquire to safely perform the clear operation.
+
+		// Wipe the handles.
+		Workers.clear();
+
+		CanEnqueue.store(true);
 	}
-
-	// Mark all workers for destroy.
-	for (auto& Worker : Workers)
-	{
-		Worker.second = true;
-	}
-
-	// Wake sleepers.
-	WorkerSignal.notify_all();
-
-	QueueLock.unlock();  // Have to unlock here otherwise we'll deadlock from the workers trying to evaluate.
-
-	// Synchronize the workers.
-	for (auto& Worker : Workers)
-	{
-		Worker.first.join();
-	}
-
-	QueueLock.lock();  // Reacquire to safely perform the clear operation.
-
-	// Wipe the handles.
-	Workers.clear();
-
-	CanEnqueue.store(true);
 }
 
 template <typename T>
