@@ -76,7 +76,7 @@ protected:
 	bool IsPendingDestroy(std::thread::id ID);
 
 	// [Not Locked]
-	std::optional<T> Dequeue();  // We can't guarantee that T implements operator bool, so Success is used to determine if the value returned is valid or not.
+	std::optional<T> Dequeue();
 };
 
 template <typename T>
