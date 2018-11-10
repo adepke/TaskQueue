@@ -13,6 +13,7 @@
 #include <thread>
 #include <cassert>
 #include <algorithm>
+#include <optional>
 
 template <typename T>
 class TaskQueue
@@ -75,7 +76,7 @@ protected:
 	bool IsPendingDestroy(std::thread::id ID);
 
 	// [Not Locked]
-	T Dequeue(bool& Success);  // We can't guarantee that T implements operator bool, so Success is used to determine if the value returned is valid or not.
+	std::optional<T> Dequeue();  // We can't guarantee that T implements operator bool, so Success is used to determine if the value returned is valid or not.
 };
 
 template <typename T>
@@ -92,15 +93,14 @@ void TaskQueue<T>::WorkerRunnable(TaskQueue* const Manager)
 			break;
 		}
 
-		bool HasTask = false;
-		T NewTask(std::move(Manager->Dequeue(HasTask)));
+		auto NewTask(std::move(Manager->Dequeue()));
 
 		// If we have a task, run it.
-		if (HasTask)
+		if (NewTask)
 		{
 			EvaluationLock.unlock();
 
-			std::invoke(NewTask);
+			std::invoke(*NewTask);
 		}
 
 		else
@@ -326,12 +326,10 @@ bool TaskQueue<T>::IsPendingDestroy(std::thread::id ID)
 }
 
 template <typename T>
-T TaskQueue<T>::Dequeue(bool& Success)
+std::optional<T> TaskQueue<T>::Dequeue()
 {
 	if (Queue.size() > 0)
 	{
-		Success = true;
-		
 		DequeueSignal.notify_all();
 
 		// We use move semantics here to acquire control over the task's resources. If we passed the reference around,
@@ -339,8 +337,8 @@ T TaskQueue<T>::Dequeue(bool& Success)
 		T NewTask(std::move(Queue.front().second));
 		Queue.pop_front();
 
-		return NewTask;
+		return std::optional(NewTask);
 	}
 
-	return T{};
+	return std::optional<T>();
 }
