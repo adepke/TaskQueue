@@ -337,7 +337,7 @@ std::optional<T> TaskQueue<T>::Dequeue()
 		T NewTask(std::move(Queue.front().second));
 		Queue.pop_front();
 
-		return std::optional(NewTask);
+		return NewTask;  // Return as RValue to invoke move constructor of std::optional<T>.
 	}
 
 	return std::optional<T>();
