@@ -340,5 +340,5 @@ std::optional<T> TaskQueue<T>::Dequeue()
 		return NewTask;  // Return as RValue to invoke move constructor of std::optional<T>.
 	}
 
-	return std::optional<T>();
+	return std::nullopt;
 }
